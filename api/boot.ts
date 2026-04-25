@@ -7,6 +7,7 @@ import { createContext } from "./context";
 import { env } from "./lib/env";
 import { createOAuthCallbackHandler } from "./kimi/auth";
 import { Paths } from "@contracts/constants";
+import { devRouter } from "./routes/dev";
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
@@ -20,6 +21,12 @@ app.use("/api/trpc/*", async (c) => {
     createContext,
   });
 });
+
+// Dev-only helpers — never mounted in production
+if (!env.isProduction) {
+  app.route("/api/dev", devRouter);
+}
+
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
 export default app;
