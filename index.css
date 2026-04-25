@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --og-blue: #3B5998;
+    --og-blue-dark: #2A4275;
+    --og-blue-light: #4C6DA5;
+    --og-warm-white: #F7F6F3;
+    --og-surface: #FFFFFF;
+    --og-border: #E2E0DC;
+    --og-border-light: #EFEFEF;
+    --og-text-primary: #1A1A2E;
+    --og-text-secondary: #5A5A6E;
+    --og-text-muted: #8A8A9E;
+    --og-success: #42B72A;
+    --og-error: #FF4444;
+    --og-gold: #D4A843;
+
+    --background: 40 14% 96%;
+    --foreground: 240 25% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 25% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 25% 14%;
+    --primary: 220 43% 41%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 14% 96%;
+    --secondary-foreground: 240 25% 14%;
+    --muted: 40 8% 93%;
+    --muted-foreground: 240 8% 55%;
+    --accent: 40 14% 96%;
+    --accent-foreground: 240 25% 14%;
+    --destructive: 0 100% 63%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 8% 87%;
+    --input: 36 8% 87%;
+    --ring: 220 43% 41%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 220 43% 41%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 14% 96%;
+    --sidebar-accent-foreground: 240 25% 14%;
+    --sidebar-border: 36 8% 87%;
+    --sidebar-ring: 220 43% 41%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+}
