@@ -67,7 +67,7 @@ async function setOGSessionCookie(resHeaders: Headers, userId: number, email: st
 }
 
 export const ogAuthRouter = createRouter({
-  me: authedQuery.query(({ ctx }) => {
+  me: publicQuery.query(({ ctx }) => {
     if (!ctx.user) return null;
     const { passwordHash, ...safeUser } = ctx.user;
     return safeUser;
@@ -160,8 +160,8 @@ export const ogAuthRouter = createRouter({
           set: { code, expiresAt, createdAt: new Date() },
         });
 
-      // In production, send email here. For demo, return code in response.
-      return { success: true, message: `Verification code sent. (Demo code: ${code})` };
+      // TODO: send code via SMTP — add nodemailer/sendgrid and call sendVerificationEmail(input.email, code)
+      return { success: true, message: "Verification code sent to your .edu email." };
     }),
 
   verifyEmail: publicQuery
@@ -185,6 +185,11 @@ export const ogAuthRouter = createRouter({
           message: "Invalid or expired verification code.",
         });
       }
+
+      // Consume the code so it cannot be reused
+      await getDb()
+        .delete(schema.emailVerifications)
+        .where(eq(schema.emailVerifications.email, input.email));
 
       return { success: true };
     }),

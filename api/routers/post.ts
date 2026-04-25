@@ -153,7 +153,7 @@ export const postRouter = createRouter({
         limit: z.number().int().min(1).max(50).default(20),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const limit = input.limit;
       const conditions = [eq(schema.posts.userId, input.userId)];
       if (input.cursor) {
@@ -202,12 +202,26 @@ export const postRouter = createRouter({
         : [];
       const commentCountMap = new Map(commentCounts.map((c) => [c.postId, c.count]));
 
+      const userLikes =
+        postIds.length && ctx.user
+          ? await getDb()
+              .select({ postId: schema.likes.postId })
+              .from(schema.likes)
+              .where(
+                and(
+                  eq(schema.likes.userId, ctx.user.id),
+                  inArray(schema.likes.postId, postIds),
+                ),
+              )
+          : [];
+      const userLikedSet = new Set(userLikes.map((l) => l.postId));
+
       const postsWithData = posts.map((post) => ({
         ...post,
         author: safeAuthor,
         likeCount: likeCountMap.get(post.id) || 0,
         commentCount: commentCountMap.get(post.id) || 0,
-        hasLiked: false,
+        hasLiked: userLikedSet.has(post.id),
       }));
 
       return { posts: postsWithData, nextCursor };

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
-import { ThumbsUp, MessageCircle, Send } from "lucide-react";
+import { ThumbsUp, MessageCircle, Send, Trash2 } from "lucide-react";
 
 interface PostWithData {
   id: number;
@@ -42,6 +42,13 @@ export default function PostCard({ post }: { post: PostWithData }) {
 
   const deletePost = trpc.post.delete.useMutation({
     onSuccess: () => {
+      utils.post.listFeed.invalidate();
+    },
+  });
+
+  const deleteComment = trpc.comment.delete.useMutation({
+    onSuccess: () => {
+      utils.comment.listByPost.invalidate({ postId: post.id });
       utils.post.listFeed.invalidate();
     },
   });
@@ -126,8 +133,21 @@ export default function PostCard({ post }: { post: PostWithData }) {
               <div key={comment.id} className="flex gap-2">
                 <Avatar name={comment.author?.name || ""} url={comment.author?.avatarUrl} size="sm" />
                 <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2">
-                  <p className="text-xs font-semibold text-gray-800">{comment.author?.name}</p>
-                  <p className="text-xs text-gray-600 mt-0.5">{comment.content}</p>
+                  <div className="flex items-start justify-between gap-1">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800">{comment.author?.name}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{comment.content}</p>
+                    </div>
+                    {user?.id === comment.userId && (
+                      <button
+                        onClick={() => deleteComment.mutate({ id: comment.id })}
+                        className="text-gray-400 hover:text-red-500 transition-colors shrink-0 mt-0.5"
+                        aria-label="Delete comment"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
