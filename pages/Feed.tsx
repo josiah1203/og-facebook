@@ -5,6 +5,8 @@ import OGHeader from "@/components/OGHeader";
 import OGSidebar from "@/components/OGSidebar";
 import PostComposer from "@/components/PostComposer";
 import PostCard from "@/components/PostCard";
+import StoriesBar from "@/components/StoriesBar";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { Loader2 } from "lucide-react";
 
 export default function Feed() {
@@ -34,12 +36,15 @@ export default function Feed() {
     <div className="min-h-screen" style={{ backgroundColor: "var(--og-warm-white)" }}>
       <OGHeader />
 
-      <div className="pt-20 pb-10 px-4">
+      <div className="pt-20 pb-20 md:pb-10 px-4">
         <div className="max-w-6xl mx-auto flex gap-6">
           <OGSidebar />
 
           <main className="flex-1 max-w-xl mx-auto lg:mx-0 w-full">
-            <div className="mb-6">
+            {/* Stories */}
+            {isAuthenticated && <StoriesBar />}
+
+            <div className="mb-4">
               <h2
                 className="text-xl font-bold"
                 style={{ fontFamily: "'Playfair Display', serif", color: "var(--og-text-primary)" }}
@@ -134,6 +139,8 @@ export default function Feed() {
           </aside>
         </div>
       </div>
+
+      <MobileBottomNav />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import Feed from './pages/Feed'
 import Profile from './pages/Profile'
 import Friends from './pages/Friends'
 import Settings from './pages/Settings'
+import Groups from './pages/Groups'
+import GroupDetail from './pages/GroupDetail'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -19,6 +21,8 @@ export default function App() {
       <Route path="/profile/:id" element={<Profile />} />
       <Route path="/friends" element={<Friends />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/groups" element={<Groups />} />
+      <Route path="/groups/:id" element={<GroupDetail />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )

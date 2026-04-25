@@ -14,16 +14,17 @@ import {
 // OG Users table — supports both OAuth (unionId) and custom email/password auth
 export const users = mysqlTable("users", {
   id: serial("id").primaryKey(),
-  unionId: varchar("unionId", { length: 255 }).unique(), // Nullable for custom auth users
+  unionId: varchar("unionId", { length: 255 }).unique(),
   email: varchar("email", { length: 320 }).unique(),
-  passwordHash: varchar("passwordHash", { length: 255 }), // For custom auth
+  passwordHash: varchar("passwordHash", { length: 255 }),
   name: varchar("name", { length: 100 }),
-  college: varchar("college", { length: 100 }), // Extracted from .edu domain
+  college: varchar("college", { length: 100 }),
   major: varchar("major", { length: 100 }),
   gradYear: int("gradYear"),
   hometown: varchar("hometown", { length: 100 }),
   bio: varchar("bio", { length: 200 }),
   avatarUrl: text("avatarUrl"),
+  coverUrl: text("coverUrl"),
   emailVerified: boolean("emailVerified").default(false).notNull(),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -46,10 +47,13 @@ export const emailVerifications = mysqlTable("email_verifications", {
 export type EmailVerification = typeof emailVerifications.$inferSelect;
 
 // Posts — chronological text-only content
+// groupId is null for wall posts, set for group posts
 export const posts = mysqlTable("posts", {
   id: serial("id").primaryKey(),
   userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  groupId: bigint("groupId", { mode: "number", unsigned: true }),
   content: text("content").notNull(),
+  imageUrl: text("imageUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -93,3 +97,57 @@ export const comments = mysqlTable("comments", {
 
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = typeof comments.$inferInsert;
+
+// Stories — 24-hour ephemeral posts
+export const stories = mysqlTable("stories", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  content: varchar("content", { length: 200 }),
+  imageUrl: text("imageUrl"),
+  bgColor: varchar("bgColor", { length: 20 }).default("#3B5998"),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Story = typeof stories.$inferSelect;
+export type InsertStory = typeof stories.$inferInsert;
+
+// Groups — campus interest groups
+export const groups = mysqlTable("groups", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  coverUrl: text("coverUrl"),
+  creatorId: bigint("creatorId", { mode: "number", unsigned: true }).notNull(),
+  privacy: mysqlEnum("privacy", ["public", "private"]).default("public").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Group = typeof groups.$inferSelect;
+export type InsertGroup = typeof groups.$inferInsert;
+
+// Group members
+export const groupMembers = mysqlTable("group_members", {
+  id: serial("id").primaryKey(),
+  groupId: bigint("groupId", { mode: "number", unsigned: true }).notNull(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  role: mysqlEnum("role", ["member", "admin"]).default("member").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("group_member_unique_idx").on(table.groupId, table.userId),
+]);
+
+export type GroupMember = typeof groupMembers.$inferSelect;
+
+// Notifications
+export const notifications = mysqlTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  actorId: bigint("actorId", { mode: "number", unsigned: true }),
+  type: mysqlEnum("type", ["friend_request", "friend_accepted", "post_like", "post_comment", "group_invite"]).notNull(),
+  entityId: bigint("entityId", { mode: "number", unsigned: true }),
+  read: boolean("read").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;

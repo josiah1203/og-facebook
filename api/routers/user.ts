@@ -118,6 +118,14 @@ export const userRouter = createRouter({
         eq(schema.friendships.addresseeId, userId),
       ),
     );
+    await db.delete(schema.stories).where(eq(schema.stories.userId, userId));
+    await db.delete(schema.groupMembers).where(eq(schema.groupMembers.userId, userId));
+    await db.delete(schema.notifications).where(
+      or(
+        eq(schema.notifications.userId, userId),
+        eq(schema.notifications.actorId, userId),
+      ),
+    );
     await db.delete(schema.posts).where(eq(schema.posts.userId, userId));
     if (ctx.user!.email) {
       await db

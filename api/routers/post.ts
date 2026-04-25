@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, desc, and, inArray, sql, lt } from "drizzle-orm";
+import { eq, desc, and, inArray, sql, lt, isNull } from "drizzle-orm";
 import { createRouter, authedQuery } from "../middleware";
 import { getDb } from "../queries/connection";
 import * as schema from "@db/schema";
@@ -57,7 +57,7 @@ export const postRouter = createRouter({
         ...friendRows2.map((r) => r.friendId),
       ];
 
-      const conditions = [inArray(schema.posts.userId, friendIds)];
+      const conditions = [inArray(schema.posts.userId, friendIds), isNull(schema.posts.groupId)];
       if (cursor) {
         conditions.push(lt(schema.posts.id, cursor));
       }
@@ -155,7 +155,7 @@ export const postRouter = createRouter({
     )
     .query(async ({ input, ctx }) => {
       const limit = input.limit;
-      const conditions = [eq(schema.posts.userId, input.userId)];
+      const conditions = [eq(schema.posts.userId, input.userId), isNull(schema.posts.groupId)];
       if (input.cursor) {
         conditions.push(lt(schema.posts.id, input.cursor));
       }

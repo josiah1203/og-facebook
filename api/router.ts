@@ -5,6 +5,9 @@ import { postRouter } from "./routers/post";
 import { friendshipRouter } from "./routers/friendship";
 import { likeRouter } from "./routers/like";
 import { commentRouter } from "./routers/comment";
+import { storyRouter } from "./routers/story";
+import { notificationRouter } from "./routers/notification";
+import { groupRouter } from "./routers/group";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -16,6 +19,9 @@ export const appRouter = createRouter({
   friendship: friendshipRouter,
   like: likeRouter,
   comment: commentRouter,
+  story: storyRouter,
+  notification: notificationRouter,
+  group: groupRouter,
 });
 
 export type AppRouter = typeof appRouter;

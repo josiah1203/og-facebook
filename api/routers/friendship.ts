@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, and, or, inArray } from "drizzle-orm";
 import { createRouter, authedQuery } from "../middleware";
 import { getDb } from "../queries/connection";
+import { createNotification } from "../lib/notify";
 import * as schema from "@db/schema";
 
 export const friendshipRouter = createRouter({
@@ -42,6 +43,8 @@ export const friendshipRouter = createRouter({
         status: "pending",
       });
 
+      await createNotification({ userId: input.addresseeId, actorId: requesterId, type: "friend_request" });
+
       return { success: true };
     }),
 
@@ -60,6 +63,8 @@ export const friendshipRouter = createRouter({
             eq(schema.friendships.status, "pending"),
           ),
         );
+
+      await createNotification({ userId: input.requesterId, actorId: addresseeId, type: "friend_accepted" });
 
       return { success: true };
     }),

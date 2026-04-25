@@ -2,6 +2,7 @@ import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
 import { createRouter, authedQuery, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
+import { createNotification } from "../lib/notify";
 import * as schema from "@db/schema";
 
 export const likeRouter = createRouter({
@@ -36,6 +37,16 @@ export const likeRouter = createRouter({
           postId: input.postId,
         });
         liked = true;
+
+        // Notify the post author
+        const post = await getDb()
+          .select({ userId: schema.posts.userId })
+          .from(schema.posts)
+          .where(eq(schema.posts.id, input.postId))
+          .limit(1);
+        if (post.length) {
+          await createNotification({ userId: post[0].userId, actorId: userId, type: "post_like", entityId: input.postId });
+        }
       }
 
       // Get new count

@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, desc, inArray } from "drizzle-orm";
 import { createRouter, authedQuery, publicQuery } from "../middleware";
 import { getDb } from "../queries/connection";
+import { createNotification } from "../lib/notify";
 import * as schema from "@db/schema";
 
 export const commentRouter = createRouter({
@@ -39,10 +40,17 @@ export const commentRouter = createRouter({
 
       const { passwordHash, ...safeAuthor } = author[0] || {} as any;
 
-      return {
-        ...comment[0],
-        author: safeAuthor,
-      };
+      // Notify the post author
+      const post = await getDb()
+        .select({ userId: schema.posts.userId })
+        .from(schema.posts)
+        .where(eq(schema.posts.id, input.postId))
+        .limit(1);
+      if (post.length) {
+        await createNotification({ userId: post[0].userId, actorId: userId, type: "post_comment", entityId: input.postId });
+      }
+
+      return { ...comment[0], author: safeAuthor };
     }),
 
   listByPost: publicQuery
