@@ -1,6 +1,7 @@
 import { getDb } from "../api/queries/connection";
 import * as schema from "./schema";
 import bcrypt from "bcryptjs";
+import { eq, desc } from "drizzle-orm";
 
 async function seed() {
   const db = getDb();
@@ -43,7 +44,11 @@ async function seed() {
       emailVerified: true,
       role: "user",
     });
-    createdUsers.push({ id: Number(result[0].insertId), email: u.email });
+    // Get the inserted user by querying the database
+    const inserted = await db.select().from(schema.users).where(eq(schema.users.email, u.email)).limit(1);
+    if (inserted[0]) {
+      createdUsers.push({ id: inserted[0].id, email: u.email });
+    }
   }
 
   // Create friendships (mutual connections)
@@ -89,11 +94,15 @@ async function seed() {
 
   const createdPosts: number[] = [];
   for (const p of posts) {
-    const result = await db.insert(schema.posts).values({
+    await db.insert(schema.posts).values({
       userId: createdUsers[p.userIdx].id,
       content: p.content,
     });
-    createdPosts.push(Number(result[0].insertId));
+    // Get the last inserted post
+    const lastPost = await db.select().from(schema.posts).orderBy(desc(schema.posts.id)).limit(1);
+    if (lastPost[0]) {
+      createdPosts.push(lastPost[0].id);
+    }
   }
 
   // Create likes

@@ -21,8 +21,10 @@ export async function findUserByEmail(email: string) {
 }
 
 export async function createUser(data: schema.InsertUser) {
-  const result = await getDb().insert(schema.users).values(data);
-  return Number(result[0].insertId);
+  await getDb().insert(schema.users).values(data);
+  // Get the last inserted user
+  const result = await getDb().select().from(schema.users).orderBy(schema.users.id).limit(1);
+  return result[0]?.id ?? 0;
 }
 
 export async function updateUser(id: number, data: Partial<schema.InsertUser>) {

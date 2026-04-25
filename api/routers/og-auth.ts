@@ -153,12 +153,25 @@ export const ogAuthRouter = createRouter({
       const code = generateCode();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-      await getDb()
-        .insert(schema.emailVerifications)
-        .values({ email: input.email, code, expiresAt })
-        .onDuplicateKeyUpdate({
-          set: { code, expiresAt, createdAt: new Date() },
-        });
+      // Check if verification record exists
+      const existing = await getDb()
+        .select()
+        .from(schema.emailVerifications)
+        .where(eq(schema.emailVerifications.email, input.email))
+        .limit(1);
+
+      if (existing.length > 0) {
+        // Update existing verification
+        await getDb()
+          .update(schema.emailVerifications)
+          .set({ code, expiresAt, createdAt: new Date() })
+          .where(eq(schema.emailVerifications.email, input.email));
+      } else {
+        // Insert new verification
+        await getDb()
+          .insert(schema.emailVerifications)
+          .values({ email: input.email, code, expiresAt });
+      }
 
       // TODO: send code via SMTP — add nodemailer/sendgrid and call sendVerificationEmail(input.email, code)
       return { success: true, message: "Verification code sent to your .edu email." };

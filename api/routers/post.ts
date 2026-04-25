@@ -10,12 +10,14 @@ export const postRouter = createRouter({
     .input(z.object({ content: z.string().min(1).max(2000) }))
     .mutation(async ({ input, ctx }) => {
       const user = ctx.user!;
-      const result = await getDb().insert(schema.posts).values({
+      await getDb().insert(schema.posts).values({
         userId: user.id,
         content: input.content,
       });
-      const postId = Number(result[0].insertId);
-      return { id: postId, content: input.content, userId: user.id, createdAt: new Date() };
+      // Get the last inserted post
+      const result = await getDb().select().from(schema.posts).where(eq(schema.posts.userId, user.id)).orderBy(desc(schema.posts.createdAt)).limit(1);
+      const post = result[0];
+      return post ? { id: post.id, content: post.content, userId: post.userId, createdAt: post.createdAt } : { id: 0, content: input.content, userId: user.id, createdAt: new Date() };
     }),
 
   listFeed: authedQuery

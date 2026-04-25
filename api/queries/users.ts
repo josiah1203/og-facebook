@@ -15,7 +15,7 @@ export async function findUserByUnionId(unionId: string) {
 
 export async function upsertUser(data: InsertUser) {
   const values = { ...data };
-  const updateSet: Partial<InsertUser> = {
+  const updateValues: Partial<InsertUser> = {
     lastSignInAt: new Date(),
     ...data,
   };
@@ -26,11 +26,26 @@ export async function upsertUser(data: InsertUser) {
     values.unionId === env.ownerUnionId
   ) {
     values.role = "admin";
-    updateSet.role = "admin";
+    updateValues.role = "admin";
   }
 
-  await getDb()
-    .insert(schema.users)
-    .values(values)
-    .onDuplicateKeyUpdate({ set: updateSet });
+  // Check if user exists by unionId
+  const existing = await getDb()
+    .select()
+    .from(schema.users)
+    .where(eq(schema.users.unionId, values.unionId || ""))
+    .limit(1);
+
+  if (existing.length > 0) {
+    // Update existing user
+    await getDb()
+      .update(schema.users)
+      .set(updateValues)
+      .where(eq(schema.users.unionId, values.unionId || ""));
+  } else {
+    // Insert new user
+    await getDb()
+      .insert(schema.users)
+      .values(values);
+  }
 }

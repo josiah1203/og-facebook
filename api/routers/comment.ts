@@ -16,32 +16,38 @@ export const commentRouter = createRouter({
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.user!.id;
 
-      const result = await getDb().insert(schema.comments).values({
+      await getDb().insert(schema.comments).values({
         userId,
         postId: input.postId,
         content: input.content,
       });
 
-      const commentId = Number(result[0].insertId);
-
-      // Fetch the created comment with author
-      const comment = await getDb()
+      // Fetch the last created comment
+      const comments = await getDb()
         .select()
         .from(schema.comments)
-        .where(eq(schema.comments.id, commentId))
+        .where(eq(schema.comments.userId, userId))
+        .orderBy(desc(schema.comments.createdAt))
         .limit(1);
 
+      const comment = comments[0];
+      if (!comment) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create comment" });
+      }
+
+      // Fetch the author
       const author = await getDb()
         .select()
         .from(schema.users)
         .where(eq(schema.users.id, userId))
         .limit(1);
 
-      const { passwordHash, ...safeAuthor } = author[0] || {} as any;
-
       return {
-        ...comment[0],
-        author: safeAuthor,
+        id: comment.id,
+        postId: comment.postId,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        author: author[0] ? { id: author[0].id, name: author[0].name } : { id: userId, name: "Unknown" },
       };
     }),
 
