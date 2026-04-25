@@ -7,6 +7,10 @@ async function seed() {
   console.log("Seeding OG database...");
 
   // Clear existing data (order matters due to FKs)
+  await db.delete(schema.notifications);
+  await db.delete(schema.groupMembers);
+  await db.delete(schema.groups);
+  await db.delete(schema.stories);
   await db.delete(schema.comments);
   await db.delete(schema.likes);
   await db.delete(schema.friendships);
@@ -138,8 +142,50 @@ async function seed() {
     });
   }
 
+  // Create demo stories (24h from now)
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const storyData = [
+    { userIdx: 1, content: "Lab day! Finally got the samples right 🔬", bgColor: "#27AE60" },
+    { userIdx: 2, content: "3am at the Media Lab. Worth it.", bgColor: "#2C3E50" },
+    { userIdx: 6, content: "Robot update: maze conquered ✅", bgColor: "#8E44AD" },
+    { userIdx: 5, content: "We won the intramural tourney!!", bgColor: "#E74C3C" },
+  ];
+  for (const s of storyData) {
+    await db.insert(schema.stories).values({
+      userId: createdUsers[s.userIdx].id,
+      content: s.content,
+      bgColor: s.bgColor,
+      expiresAt,
+    });
+  }
+
+  // Create demo groups
+  const groupData = [
+    { creatorIdx: 0, name: "Harvard CS 2026", description: "All CS students graduating 2026 — share resources, jobs, and commiserate.", privacy: "public" as const },
+    { creatorIdx: 2, name: "MIT Side Projects Lab", description: "A place to share your personal projects, get feedback, and find collaborators.", privacy: "public" as const },
+    { creatorIdx: 4, name: "Bay Area Transfers", description: "Students from the Bay connecting on campus.", privacy: "public" as const },
+    { creatorIdx: 3, name: "Creative Writing Circle", description: "Private group for workshopping fiction and poetry.", privacy: "private" as const },
+  ];
+
+  for (const g of groupData) {
+    const gResult = await db.insert(schema.groups).values({
+      name: g.name,
+      description: g.description,
+      creatorId: createdUsers[g.creatorIdx].id,
+      privacy: g.privacy,
+    });
+    const groupId = Number(gResult[0].insertId);
+    // Creator is admin
+    await db.insert(schema.groupMembers).values({ groupId, userId: createdUsers[g.creatorIdx].id, role: "admin" });
+    // Add a couple of members
+    const otherIdxs = [1, 2, 5, 6].filter((i) => i !== g.creatorIdx).slice(0, 2);
+    for (const idx of otherIdxs) {
+      await db.insert(schema.groupMembers).values({ groupId, userId: createdUsers[idx].id, role: "member" });
+    }
+  }
+
   console.log("Seeded OG database successfully!");
-  console.log(`Created ${users.length} users, ${friendshipPairs.length} friendships, ${posts.length} posts, ${likes.length} likes, ${comments.length} comments.`);
+  console.log(`Created ${users.length} users, ${friendshipPairs.length} friendships, ${posts.length} posts, ${likes.length} likes, ${comments.length} comments, ${storyData.length} stories, ${groupData.length} groups.`);
   console.log("Demo login: alex.chen@harvard.edu / password123");
 }
 
