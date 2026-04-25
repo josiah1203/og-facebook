@@ -47,6 +47,8 @@ export default function Profile() {
     { enabled: !!profileId && !isOwnProfile },
   );
 
+  const utils = trpc.useUtils();
+
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
       setIsEditing(false);
@@ -71,8 +73,6 @@ export default function Profile() {
       utils.friendship.isFriend.invalidate({ userId: profileId! });
     },
   });
-
-  const utils = trpc.useUtils();
 
   if (authLoading || profileLoading) {
     return (

@@ -1,9 +1,11 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, ne, like, and } from "drizzle-orm";
+import { eq, ne, like, and, or } from "drizzle-orm";
+import * as cookie from "cookie";
 import { createRouter, authedQuery, publicQuery } from "../middleware";
 import { findUserById } from "../queries/og-users";
 import { getDb } from "../queries/connection";
+import { OG_SESSION_COOKIE, getSessionCookieOptions } from "../lib/og-auth";
 import * as schema from "@db/schema";
 
 export const userRouter = createRouter({
@@ -52,12 +54,14 @@ export const userRouter = createRouter({
       const currentUser = ctx.user!;
       const limit = input?.limit ?? 20;
 
+      if (!currentUser.college) return [];
+
       const rows = await getDb()
         .select()
         .from(schema.users)
         .where(
           and(
-            eq(schema.users.college, currentUser.college!),
+            eq(schema.users.college, currentUser.college),
             ne(schema.users.id, currentUser.id),
           ),
         )
@@ -100,4 +104,43 @@ export const userRouter = createRouter({
       const { passwordHash, ...safeUser } = updated!;
       return safeUser;
     }),
+
+  deleteAccount: authedQuery.mutation(async ({ ctx }) => {
+    const userId = ctx.user!.id;
+    const db = getDb();
+
+    // Delete in FK-safe order: dependents first, user last
+    await db.delete(schema.comments).where(eq(schema.comments.userId, userId));
+    await db.delete(schema.likes).where(eq(schema.likes.userId, userId));
+    await db.delete(schema.friendships).where(
+      or(
+        eq(schema.friendships.requesterId, userId),
+        eq(schema.friendships.addresseeId, userId),
+      ),
+    );
+    await db.delete(schema.posts).where(eq(schema.posts.userId, userId));
+    if (ctx.user!.email) {
+      await db
+        .delete(schema.emailVerifications)
+        .where(eq(schema.emailVerifications.email, ctx.user!.email));
+    }
+    await db.delete(schema.users).where(eq(schema.users.id, userId));
+
+    // Clear the session cookie
+    const opts = getSessionCookieOptions(ctx.req.headers);
+    ctx.resHeaders.append(
+      "set-cookie",
+      cookie.serialize(OG_SESSION_COOKIE, "", {
+        httpOnly: opts.httpOnly,
+        path: opts.path,
+        sameSite: (typeof opts.sameSite === "string"
+          ? opts.sameSite.toLowerCase()
+          : opts.sameSite) as "lax" | "none" | "strict",
+        secure: opts.secure,
+        maxAge: 0,
+      }),
+    );
+
+    return { success: true };
+  }),
 });

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 import OGHeader from "@/components/OGHeader";
@@ -12,11 +13,19 @@ export default function Settings() {
   const [hometown, setHometown] = useState(user?.hometown || "");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const utils = trpc.useUtils();
+  const navigate = useNavigate();
 
   const updateProfile = trpc.user.updateProfile.useMutation({
     onSuccess: () => {
       utils.ogAuth.me.invalidate();
       utils.user.getById.invalidate({ id: user!.id });
+    },
+  });
+
+  const deleteAccount = trpc.user.deleteAccount.useMutation({
+    onSuccess: async () => {
+      await utils.invalidate();
+      navigate("/");
     },
   });
 
@@ -159,9 +168,11 @@ export default function Settings() {
                         Cancel
                       </button>
                       <button
-                        className="px-4 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+                        onClick={() => deleteAccount.mutate()}
+                        disabled={deleteAccount.isPending}
+                        className="px-4 py-2 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-50"
                       >
-                        Delete Account
+                        {deleteAccount.isPending ? "Deleting..." : "Delete Account"}
                       </button>
                     </div>
                   </div>
